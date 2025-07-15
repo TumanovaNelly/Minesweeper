@@ -10,14 +10,16 @@ import java.util.Set;
 /**
  * Represents the game field, containing a grid of {@link Cell} objects.
  * <p>
- * This class handles the entire setup of the game board, including a "safe start"
- * feature. It ensures that the first clicked cell and its immediate neighbors
- * will not contain mines.
+ * This class handles the entire setup of the game board. It uses a highly
+ * efficient, two-pass initialization strategy with a temporary "neighbor map"
+ * to ensure both high performance and a clean, immutable API for the {@link Cell} class.
+ * It also implements a "safe start" feature.
  */
 public final class Field {
 
     /**
      * A simple, immutable value object to represent coordinates on the field.
+     * Using this object instead of separate int parameters improves type safety and code clarity.
      */
     public static final class Coordinate {
         public final int row;
@@ -65,16 +67,46 @@ public final class Field {
         initializeField(safeCoordinate);
     }
 
+
+    /**
+     * Initializes the field by first placing mines and pre-calculating neighbor counts,
+     * then creating the empty cells.
+     * @param safeCoordinate The coordinate that must be free of mines.
+     */
     private void initializeField(Coordinate safeCoordinate) {
-        placeMines(safeCoordinate);
-        fillEmptyCells();
+        int[][] neighborMap = new int[height][width];
+        placeMinesAndUpdateNeighborMap(safeCoordinate, neighborMap);
+        fillEmptyCells(neighborMap);
     }
 
     /**
-     * First pass: Randomly places mine cells onto the grid, avoiding the
-     * 3x3 area around the safe coordinate.
+     * Places mines randomly on the field, avoiding the safe zone, and simultaneously
+     * populates the neighborMap with adjacent mine counts.
+     * @param safeCoordinate The coordinate defining the center of the mine-free zone.
+     * @param neighborMap A 2D array to be populated with counts of adjacent mines.
      */
-    private void placeMines(Coordinate safeCoordinate) {
+    private void placeMinesAndUpdateNeighborMap(Coordinate safeCoordinate, int[][] neighborMap) {
+        List<Integer> potentialPositions = getPotentialMinePositions(safeCoordinate);
+        Collections.shuffle(potentialPositions);
+
+        int minesToPlace = Math.min(minesCount, potentialPositions.size());
+        for (int i = 0; i < minesToPlace; i++) {
+            int pos = potentialPositions.get(i);
+            int row = pos / width;
+            int col = pos % width;
+
+            // Place a mine cell in the main grid.
+            cells[row][col] = Cell.createMine();
+            updateNeighborMap(neighborMap, new Coordinate(row, col));
+        }
+    }
+
+    /**
+     * Creates a list of all valid positions for mine placement, excluding the forbidden zone.
+     * @param safeCoordinate The center of the 3x3 forbidden zone.
+     * @return A list of integer positions available for mine placement.
+     */
+    private List<Integer> getPotentialMinePositions(Coordinate safeCoordinate) {
         int totalCells = width * height;
         List<Integer> potentialPositions = new ArrayList<>(totalCells);
         Set<Integer> forbiddenPositions = getForbiddenPositions(safeCoordinate);
@@ -84,20 +116,13 @@ public final class Field {
                 potentialPositions.add(i);
             }
         }
-
-        Collections.shuffle(potentialPositions);
-
-        int minesToPlace = Math.min(minesCount, potentialPositions.size());
-        for (int i = 0; i < minesToPlace; i++) {
-            int pos = potentialPositions.get(i);
-            int row = pos / width;
-            int col = pos % width;
-            cells[row][col] = Cell.createMine();
-        }
+        return potentialPositions;
     }
 
     /**
      * Calculates the set of forbidden positions (a 3x3 grid) for mine placement.
+     * @param center The center coordinate of the forbidden zone.
+     * @return A set of integer positions where mines cannot be placed.
      */
     private Set<Integer> getForbiddenPositions(Coordinate center) {
         Set<Integer> forbidden = new HashSet<>();
@@ -113,46 +138,39 @@ public final class Field {
     }
 
     /**
-     * Second pass: Fills the remaining empty (null) spots with non-mine cells
-     * after calculating their adjacent mine counts.
+     * Increments the count for all 8 neighbors of a newly placed mine in the neighborMap.
+     * @param neighborMap The map of neighbor counts to update.
+     * @param mineCoordinate The coordinate of the newly placed mine.
      */
-    private void fillEmptyCells() {
+    private void updateNeighborMap(int[][] neighborMap, Coordinate mineCoordinate) {
+        for (int dRow = -1; dRow <= 1; dRow++) {
+            for (int dCol = -1; dCol <= 1; dCol++) {
+                // A mine does not count itself as a neighbor.
+                if (dRow == 0 && dCol == 0) continue;
+
+                Coordinate neighborCoordinate = new Coordinate(mineCoordinate.row + dRow, mineCoordinate.col + dCol);
+                if (isValidCoordinate(neighborCoordinate)) {
+                    ++neighborMap[neighborCoordinate.row][neighborCoordinate.col];
+                }
+            }
+        }
+    }
+
+    /**
+     * Fills the remaining empty (null) spots in the grid with non-mine cells,
+     * using the pre-calculated counts from the neighborMap.
+     * @param neighborMap A 2D array containing the final count of adjacent mines for each cell.
+     */
+    private void fillEmptyCells(int[][] neighborMap) {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
                 if (cells[row][col] != null) {
                     // This cell is already a mine, skip it.
                     continue;
                 }
-                int adjacentMines = countAdjacentMines(new Coordinate(row, col));
-                cells[row][col] = Cell.createEmpty(adjacentMines);
+                cells[row][col] = Cell.createEmpty(neighborMap[row][col]);
             }
         }
-    }
-
-    /**
-     * Counts the number of mines in the 8 cells surrounding a given coordinate.
-     *
-     * @param coordinate The coordinate of the cell to check around.
-     * @return The total number of adjacent mines.
-     */
-    private int countAdjacentMines(Coordinate coordinate) {
-        int count = 0;
-        for (int dRow = -1; dRow <= 1; dRow++) {
-            for (int dCol = -1; dCol <= 1; dCol++) {
-                if (dRow == 0 && dCol == 0) continue;
-
-                Coordinate neighborCoordinate = new Coordinate(coordinate.row + dRow, coordinate.col + dCol);
-
-                if (isValidCoordinate(neighborCoordinate)) {
-                    Cell neighbor = cells[neighborCoordinate.row][neighborCoordinate.col];
-                    // A neighbor is a mine if it was placed in the first pass (i.e., not null).
-                    if (neighbor != null && neighbor.hasMine()) {
-                        ++count;
-                    }
-                }
-            }
-        }
-        return count;
     }
 
     /**
