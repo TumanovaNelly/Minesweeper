@@ -1,88 +1,71 @@
 package com.example.minesweeper.core.model;
 
 import java.util.Locale;
-import java.util.Objects;
 
 /**
- * An immutable container class for storing field settings.
+ * An immutable record that encapsulates the settings for a game field.
+ * <p>
+ * This record not only holds the configuration data but also validates it upon
+ * creation, ensuring that no invalid game state can be configured. It calculates
+ * the absolute number of mines from a given percentage.
+ *
+ * @param width        The width of the game field.
+ * @param height       The height of the game field.
+ * @param minesCount   The absolute number of mines on the field, calculated from a percentage.
  */
-public final class FieldSettings {
+public record FieldSettings(int width, int height, int minesCount) {
 
-    // Minimum and maximum allowable field sizes and number of mines
+    // Constants can be defined inside a record just like in a class.
     private static final int MIN_DIMENSION = 5;
     private static final int MAX_DIMENSION = 500;
     private static final int MIN_MINES = 1;
 
-    private final int width;
-    private final int height;
-    private final int minesCount;
-
     /**
-     * Creates a field settings object with input validation.
+     * A compact canonical constructor used for validation and custom initialization logic.
+     * This constructor is called automatically by the primary constructor.
      *
-     * @param width         the width of the field.
-     * @param height        the height of the field.
-     * @param minesPercent  percentage of mines in the field relative to the size of the field.
-     * @throws IllegalArgumentException if the parameters do not match the rules of the game.
+     * @throws IllegalArgumentException if any of the parameters are invalid.
      */
-    public FieldSettings(int width, int height, int minesPercent) {
+    public FieldSettings {
+        // --- Validation ---
         if (width < MIN_DIMENSION || width > MAX_DIMENSION ||
-                height < MIN_DIMENSION || height > MAX_DIMENSION)
+                height < MIN_DIMENSION || height > MAX_DIMENSION) {
             throw new IllegalArgumentException(
-                    String.format("Board dimensions must be between %d and %d",
+                    String.format(Locale.US, "Field dimensions must be between %d and %d.",
                             MIN_DIMENSION, MAX_DIMENSION)
             );
+        }
 
-        if (minesPercent < 0 || minesPercent > 100)
+        if (minesCount < MIN_MINES) {
             throw new IllegalArgumentException(
-                    "The percentage of mines should not be negative or greater than 100"
+                    String.format(Locale.US, "Calculated mines count (%d) is less than the minimum allowed (%d).",
+                            minesCount, MIN_MINES)
             );
-
-        int cellsCount = width * height;
-        this.minesCount = cellsCount * minesPercent / 100;
-
-        if (minesCount < MIN_MINES)
-            throw new IllegalArgumentException(
-                    String.format("Mines count must be greater than %d. Specify a different percentage",
-                            MIN_MINES)
-            );
-
-        this.width = width;
-        this.height = height;
+        }
+        // Ensure there's at least one empty cell.
+        if (minesCount >= (long) width * height) {
+            throw new IllegalArgumentException("Mines count must be less than the total number of cells.");
+        }
     }
 
-    /* _____ Public getters _____ */
+    /**
+     * A static factory method to create FieldSettings from a mine percentage.
+     * This provides a clear and convenient way to instantiate the record
+     * based on a different set of input parameters.
+     *
+     * @param width        The desired width of the field.
+     * @param height       The desired height of the field.
+     * @param minesPercent The desired percentage of mines (0-100).
+     * @return A new, validated {@link FieldSettings} instance.
+     */
+    public static FieldSettings fromPercentage(int width, int height, int minesPercent) {
+        if (minesPercent < 0 || minesPercent > 99) {
+            throw new IllegalArgumentException("The percentage of mines must be between 0 and 99.");
+        }
 
-    public int getWidth() {
-        return width;
-    }
+        int totalCells = width * height;
+        int calculatedMines = totalCells * minesPercent / 100;
 
-    public int getHeight() {
-        return height;
-    }
-
-    public int getMinesCount() {
-        return minesCount;
-    }
-
-    @Override
-    public String toString() {
-        return String.format(Locale.US,"fieldWidth=%d,\nfieldHeight=%d,\nminesCount=%d",
-                width, height, minesCount);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FieldSettings that = (FieldSettings) o;
-        return width == that.width &&
-                height == that.height &&
-                minesCount == that.minesCount;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(width, height, minesCount);
+        return new FieldSettings(width, height, calculatedMines);
     }
 }

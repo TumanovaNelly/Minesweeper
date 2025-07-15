@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -18,31 +17,15 @@ import java.util.Set;
 public final class Field {
 
     /**
-     * A simple, immutable value object to represent coordinates on the field.
-     * Using this object instead of separate int parameters improves type safety and code clarity.
+     * An immutable record to represent coordinates on the field.
+     * <p>
+     * As a {@code record}, it automatically provides a canonical constructor,
+     * public accessors ({@code row()}, {@code col()}), and correct implementations
+     * of {@code equals()}, {@code hashCode()}, and {@code toString()}.
+     * Using this record instead of separate int parameters improves type safety
+     * and code clarity.
      */
-    public static final class Coordinate {
-        public final int row;
-        public final int col;
-
-        public Coordinate(int row, int col) {
-            this.row = row;
-            this.col = col;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Coordinate that = (Coordinate) o;
-            return row == that.row && col == that.col;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(row, col);
-        }
-    }
+    public record Coordinate(int row, int col) {}
 
     // _____ Field Class Members _____
 
@@ -59,9 +42,9 @@ public final class Field {
      * @param safeCoordinate The coordinate of the first click, which defines the center of the safe zone.
      */
     public Field(FieldSettings settings, Coordinate safeCoordinate) {
-        this.width = settings.getWidth();
-        this.height = settings.getHeight();
-        this.minesCount = settings.getMinesCount();
+        this.width = settings.width();
+        this.height = settings.height();
+        this.minesCount = settings.minesCount();
         this.cells = new Cell[height][width];
 
         initializeField(safeCoordinate);
