@@ -111,9 +111,9 @@ public final class Field {
         Set<Integer> forbidden = new HashSet<>();
         for (int dRow = -1; dRow <= 1; dRow++) {
             for (int dCol = -1; dCol <= 1; dCol++) {
-                Coordinate coordinate = new Coordinate(center.row + dRow, center.col + dCol);
+                Coordinate coordinate = new Coordinate(center.row() + dRow, center.col() + dCol);
                 if (isValidCoordinate(coordinate)) {
-                    forbidden.add(coordinate.row * width + coordinate.col);
+                    forbidden.add(coordinate.row() * width + coordinate.col());
                 }
             }
         }
@@ -131,9 +131,9 @@ public final class Field {
                 // A mine does not count itself as a neighbor.
                 if (dRow == 0 && dCol == 0) continue;
 
-                Coordinate neighborCoordinate = new Coordinate(mineCoordinate.row + dRow, mineCoordinate.col + dCol);
+                Coordinate neighborCoordinate = new Coordinate(mineCoordinate.row() + dRow, mineCoordinate.col() + dCol);
                 if (isValidCoordinate(neighborCoordinate)) {
-                    ++neighborMap[neighborCoordinate.row][neighborCoordinate.col];
+                    ++neighborMap[neighborCoordinate.row()][neighborCoordinate.col()];
                 }
             }
         }
@@ -163,8 +163,8 @@ public final class Field {
      * @return true if the coordinate is valid, false otherwise.
      */
     private boolean isValidCoordinate(Coordinate coordinate) {
-        return coordinate.row >= 0 && coordinate.row < height &&
-                coordinate.col >= 0 && coordinate.col < width;
+        return coordinate.row() >= 0 && coordinate.row() < height &&
+                coordinate.col() >= 0 && coordinate.col() < width;
     }
 
     // --- Public API ---
@@ -181,7 +181,7 @@ public final class Field {
             throw new IllegalArgumentException("Coordinates are out of bounds.");
         }
 
-        return cells[coordinate.row][coordinate.col];
+        return cells[coordinate.row()][coordinate.col()];
     }
 
     public int getWidth() {

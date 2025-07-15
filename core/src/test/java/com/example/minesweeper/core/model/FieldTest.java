@@ -26,7 +26,7 @@ public class FieldTest {
             }
         }
         assertEquals("The number of mines on the field should match the settings",
-                settings.getMinesCount(), actualMinesCount);
+                settings.minesCount(), actualMinesCount);
     }
 
     @Test
@@ -41,8 +41,8 @@ public class FieldTest {
         // Assert: Check that the 3x3 area around the safe coordinate is clear of mines
         for (int dRow = -1; dRow <= 1; dRow++) {
             for (int dCol = -1; dCol <= 1; dCol++) {
-                int row = safeCenter.row + dRow;
-                int col = safeCenter.col + dCol;
+                int row = safeCenter.row() + dRow;
+                int col = safeCenter.col() + dCol;
                 Cell cell = field.getCell(new Field.Coordinate(row, col));
                 assertFalse(
                         String.format("Cell at safe zone (%d, %d) should not contain a mine", row, col),
