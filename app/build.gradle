@@ -35,6 +35,7 @@ dependencies {
     implementation libs.appcompat.v161
     implementation libs.material.v1100
     implementation libs.constraintlayout.v214
+    implementation libs.activity
 
     testImplementation libs.junit
     androidTestImplementation libs.junit.v115
