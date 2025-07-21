@@ -36,6 +36,8 @@ dependencies {
     implementation project(':core')
     implementation project(':data')
 
+    implementation libs.lifecycle.viewmodel
+    implementation libs.lifecycle.livedata
     implementation libs.appcompat.v161
     implementation libs.material.v1100
     implementation libs.constraintlayout.v214
