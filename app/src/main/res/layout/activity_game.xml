@@ -49,7 +49,7 @@
             app:layout_constraintEnd_toStartOf="@+id/timer_text"
             app:layout_constraintStart_toEndOf="@+id/mines_count_text"
             app:layout_constraintTop_toTopOf="parent"
-            tools:srcCompat="@drawable/ic_clown_smile" />
+            app:srcCompat="@drawable/ic_clown_smile" />
 
         <!-- Timer -->
         <TextView
