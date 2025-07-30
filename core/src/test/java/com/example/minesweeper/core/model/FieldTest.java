@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 public class FieldTest {
 
     // A dummy safe coordinate for tests where its specific location doesn't matter.
-    private final Field.Coordinate DUMMY_SAFE_COORDINATE = new Field.Coordinate(0, 0);
+    private final Coordinate DUMMY_SAFE_COORDINATE = new Coordinate(0, 0);
 
     @Test
     public void constructor_placesCorrectNumberOfMines() {
@@ -20,7 +20,7 @@ public class FieldTest {
         long actualMinesCount = 0;
         for (int row = 0; row < field.getHeight(); row++) {
             for (int col = 0; col < field.getWidth(); col++) {
-                if (field.getCell(new Field.Coordinate(row, col)).hasMine()) {
+                if (field.getCell(new Coordinate(row, col)).hasMine()) {
                     actualMinesCount++;
                 }
             }
@@ -33,7 +33,7 @@ public class FieldTest {
     public void constructor_safeZone_doesNotContainMines() {
         // Arrange
         FieldSettings settings = new FieldSettings(5, 5, 16); // 16 mines on a 25-cell field
-        Field.Coordinate safeCenter = new Field.Coordinate(2, 2);
+        Coordinate safeCenter = new Coordinate(2, 2);
 
         // Act: Create a field with a guaranteed safe zone around (2, 2)
         Field field = new Field(settings, safeCenter);
@@ -43,7 +43,7 @@ public class FieldTest {
             for (int dCol = -1; dCol <= 1; dCol++) {
                 int row = safeCenter.row() + dRow;
                 int col = safeCenter.col() + dCol;
-                Cell cell = field.getCell(new Field.Coordinate(row, col));
+                Cell cell = field.getCell(new Coordinate(row, col));
                 assertFalse(
                         String.format("Cell at safe zone (%d, %d) should not contain a mine", row, col),
                         cell.hasMine()
@@ -63,7 +63,7 @@ public class FieldTest {
         // Assert
         for (int row = 0; row < field.getHeight(); row++) {
             for (int col = 0; col < field.getWidth(); col++) {
-                Cell cell = field.getCell(new Field.Coordinate(row, col));
+                Cell cell = field.getCell(new Coordinate(row, col));
                 if (!cell.hasMine()) {
                     int expectedAdjacentMines = countNeighborsManually(field, row, col);
                     assertEquals(
@@ -90,7 +90,7 @@ public class FieldTest {
 
                 // Correct boundary check
                 if (nRow >= 0 && nRow < field.getHeight() && nCol >= 0 && nCol < field.getWidth()) {
-                    if (field.getCell(new Field.Coordinate(nRow, nCol)).hasMine()) {
+                    if (field.getCell(new Coordinate(nRow, nCol)).hasMine()) {
                         count++;
                     }
                 }
@@ -106,7 +106,7 @@ public class FieldTest {
         Field field = new Field(settings, DUMMY_SAFE_COORDINATE);
 
         // Act
-        field.getCell(new Field.Coordinate(-1, 5));
+        field.getCell(new Coordinate(-1, 5));
 
         // Assert: JUnit expects an IllegalArgumentException to be thrown.
     }
@@ -118,7 +118,7 @@ public class FieldTest {
         Field field = new Field(settings, DUMMY_SAFE_COORDINATE);
 
         // Act
-        field.getCell(new Field.Coordinate(5, 10)); // Height is 10, so max row index is 9.
+        field.getCell(new Coordinate(5, 10)); // Height is 10, so max row index is 9.
 
         // Assert
     }

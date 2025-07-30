@@ -8,6 +8,7 @@ import com.example.minesweeper.core.model.Field;
 import com.example.minesweeper.core.model.FieldSettings;
 import com.example.minesweeper.core.model.GameEngine;
 import com.example.minesweeper.core.model.GameState;
+import com.example.minesweeper.core.repository.IField;
 
 /**
  * ViewModel for the game screen ({@link GameActivity}).
@@ -24,7 +25,7 @@ public class GameViewModel extends ViewModel {
     // --- LiveData for UI State ---
 
     // Private MutableLiveData, which can be changed only within this ViewModel.
-    private final MutableLiveData<Field> _fieldLiveData = new MutableLiveData<>();
+    private final MutableLiveData<IField> _fieldLiveData = new MutableLiveData<>();
     private final MutableLiveData<GameState> _gameStateLiveData = new MutableLiveData<>();
     private final MutableLiveData<Integer> _minesCountLiveData = new MutableLiveData<>();
     // private final MutableLiveData<Long> _timerLiveData = new MutableLiveData<>();
@@ -36,7 +37,7 @@ public class GameViewModel extends ViewModel {
      * Exposes the current state of the game field to the UI.
      * @return A LiveData stream of the {@link Field} object.
      */
-    public LiveData<Field> getFieldLiveData() {
+    public LiveData<IField> getFieldLiveData() {
         return _fieldLiveData;
     }
 

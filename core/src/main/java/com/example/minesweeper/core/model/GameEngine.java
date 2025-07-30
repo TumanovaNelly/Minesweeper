@@ -1,5 +1,7 @@
 package com.example.minesweeper.core.model;
 
+import com.example.minesweeper.core.repository.IField;
+
 /**
  * The main engine for the Minesweeper game.
  * <p>
@@ -9,7 +11,7 @@ package com.example.minesweeper.core.model;
  * The UI should only communicate with this class to drive the game forward.
  */
 public class GameEngine {
-    private Field field;
+    private IField field;
     private GameState gameState;
     private FieldSettings settings;
     private int revealedCellsCount;
@@ -30,7 +32,7 @@ public class GameEngine {
      */
     public void startNewGame(FieldSettings settings) {
         this.settings = settings;
-        this.field = null; // Field will be created on the first move
+        this.field = new InitialField(settings);
         this.gameState = GameState.IN_PROGRESS;
         this.revealedCellsCount = 0;
         this.isFirstMove = true;
@@ -50,7 +52,7 @@ public class GameEngine {
             if (settings == null) {
                 throw new IllegalStateException("Game has not been started. Call startNewGame() first.");
             }
-            Field.Coordinate safeCoordinate = new Field.Coordinate(row, col);
+            Coordinate safeCoordinate = new Coordinate(row, col);
             this.field = new Field(settings, safeCoordinate);
             this.isFirstMove = false;
         }
@@ -59,7 +61,7 @@ public class GameEngine {
             return; // Game is over, no more moves allowed.
         }
 
-        Cell cell = field.getCell(new Field.Coordinate(row, col));
+        Cell cell = field.getCell(new Coordinate(row, col));
 
         if (cell.isRevealed() || cell.isFlagged()) {
             return; // Cannot reveal an already revealed or flagged cell.
@@ -76,7 +78,7 @@ public class GameEngine {
         revealedCellsCount++;
 
         if (cell.getAdjacentMinesCount() == 0) {
-            revealNeighbors(new Field.Coordinate(row, col));
+            revealNeighbors(new Coordinate(row, col));
         }
 
         checkWinCondition();
@@ -87,7 +89,7 @@ public class GameEngine {
      *
      * @param coordinate The coordinate of the initial empty cell.
      */
-    private void revealNeighbors(Field.Coordinate coordinate) {
+    private void revealNeighbors(Coordinate coordinate) {
         // ...
     }
 
@@ -119,7 +121,7 @@ public class GameEngine {
      * @return The {@link Field} object, allowing the UI to access cells for rendering.
      *         Returns null if the game has not been started yet.
      */
-    public Field getField() {
+    public IField getField() {
         return field;
     }
 

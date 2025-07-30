@@ -1,5 +1,7 @@
 package com.example.minesweeper.core.model;
 
+import com.example.minesweeper.core.repository.IField;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -14,18 +16,7 @@ import java.util.Set;
  * to ensure both high performance and a clean, immutable API for the {@link Cell} class.
  * It also implements a "safe start" feature.
  */
-public final class Field {
-
-    /**
-     * An immutable record to represent coordinates on the field.
-     * <p>
-     * As a {@code record}, it automatically provides a canonical constructor,
-     * public accessors ({@code row()}, {@code col()}), and correct implementations
-     * of {@code equals()}, {@code hashCode()}, and {@code toString()}.
-     * Using this record instead of separate int parameters improves type safety
-     * and code clarity.
-     */
-    public record Coordinate(int row, int col) {}
+public final class Field implements IField {
 
     // _____ Field Class Members _____
 
@@ -156,26 +147,7 @@ public final class Field {
         }
     }
 
-    /**
-     * Checks if the given coordinate is within the bounds of the field.
-     *
-     * @param coordinate The coordinate to check.
-     * @return true if the coordinate is valid, false otherwise.
-     */
-    private boolean isValidCoordinate(Coordinate coordinate) {
-        return coordinate.row() >= 0 && coordinate.row() < height &&
-                coordinate.col() >= 0 && coordinate.col() < width;
-    }
-
-    // --- Public API ---
-
-    /**
-     * Retrieves the cell at the specified coordinate.
-     *
-     * @param coordinate The coordinate object of the cell.
-     * @return The {@link Cell} at the given position.
-     * @throws IllegalArgumentException if the coordinate is out of bounds.
-     */
+    @Override
     public Cell getCell(Coordinate coordinate) {
         if (!isValidCoordinate(coordinate)) {
             throw new IllegalArgumentException("Coordinates are out of bounds.");
@@ -184,14 +156,17 @@ public final class Field {
         return cells[coordinate.row()][coordinate.col()];
     }
 
+    @Override
     public int getWidth() {
         return width;
     }
 
+    @Override
     public int getHeight() {
         return height;
     }
 
+    @Override
     public int getMinesCount() {
         return minesCount;
     }

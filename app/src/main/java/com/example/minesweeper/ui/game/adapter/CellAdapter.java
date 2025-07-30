@@ -8,7 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.minesweeper.core.model.Cell;
-import com.example.minesweeper.core.model.Field;
+import com.example.minesweeper.core.model.Coordinate;
+import com.example.minesweeper.core.repository.IField;
 import com.example.minesweeper.databinding.ItemCellBinding;
 
 /**
@@ -20,7 +21,7 @@ import com.example.minesweeper.databinding.ItemCellBinding;
  */
 public class CellAdapter extends RecyclerView.Adapter<CellAdapter.CellViewHolder> {
 
-    private Field field;
+    private IField field;
     private final OnCellClickListener listener;
 
     /**
@@ -63,7 +64,7 @@ public class CellAdapter extends RecyclerView.Adapter<CellAdapter.CellViewHolder
      * @param newField The new state of the game field, or null to clear the board.
      */
     @SuppressLint("NotifyDataSetChanged")
-    public void updateField(Field newField) {
+    public void updateField(IField newField) {
         this.field = newField;
         notifyDataSetChanged();
     }
@@ -88,7 +89,7 @@ public class CellAdapter extends RecyclerView.Adapter<CellAdapter.CellViewHolder
         int row = position / field.getWidth();
         int col = position % field.getWidth();
 
-        Cell cell = field.getCell(new Field.Coordinate(row, col));
+        Cell cell = field.getCell(new Coordinate(row, col));
         holder.bind(cell);
 
         // Set click listeners on the root view of the ViewHolder.
