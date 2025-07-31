@@ -93,6 +93,28 @@ public class GameEngine {
         // ...
     }
 
+
+    /**
+     * Toggles a flag on a cell at the specified coordinates.
+     * <p>
+     * This method cycles through the following states:
+     * <ul>
+     *     <li>{@code HIDDEN} -> {@code FLAGGED}</li>
+     *     <li>{@code FLAGGED} -> {@code HIDDEN}</li>
+     * </ul>
+     * No action is taken if the cell is already revealed.
+     *
+     * @param row The row-coordinate of the cell.
+     * @param col The column-coordinate of the cell.
+     */
+    public void toggleFlag(int row, int col) {
+        Cell cell = field.getCell(new Coordinate(row, col));
+        switch (cell.getState()) {
+            case FLAGGED -> cell.setState(CellState.HIDDEN);
+            case HIDDEN -> cell.setState(CellState.FLAGGED);
+        }
+    }
+
     /**
      * Checks if the win condition has been met after a cell is revealed.
      * The game is won when all non-mine cells have been revealed.
@@ -124,6 +146,4 @@ public class GameEngine {
     public IField getField() {
         return field;
     }
-
-    // ... other methods like toggleFlag(), getGameState(), getField() ...
 }

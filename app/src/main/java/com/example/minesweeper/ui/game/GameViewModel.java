@@ -22,7 +22,7 @@ public class GameViewModel extends ViewModel {
 
     private final GameEngine gameEngine = new GameEngine();
 
-    // --- LiveData for UI State ---
+    // _____ LiveData for UI State _____
 
     // Private MutableLiveData, which can be changed only within this ViewModel.
     private final MutableLiveData<IField> _fieldLiveData = new MutableLiveData<>();
@@ -58,7 +58,7 @@ public class GameViewModel extends ViewModel {
     }
 
 
-    // --- User Action Handlers ---
+    // _____ User Action Handlers _____
 
     /**
      * Handles a request to start a new game, typically triggered by a button click in the View.
@@ -72,7 +72,6 @@ public class GameViewModel extends ViewModel {
         // Push the initial state to the UI.
         _gameStateLiveData.postValue(gameEngine.getGameState());
         _minesCountLiveData.postValue(settings.minesCount());
-        // The field is initially a "dummy" field for the user to make the first move.
         _fieldLiveData.postValue(gameEngine.getField());
     }
 
@@ -99,8 +98,7 @@ public class GameViewModel extends ViewModel {
     public void onCellLongClicked(int row, int col) {
         if (gameEngine.getGameState() != GameState.IN_PROGRESS) return;
 
-        // TODO: Add a toggleFlag(row, col) method in GameEngine.
-        // gameEngine.toggleFlag(row, col);
+        gameEngine.toggleFlag(row, col);
         updateAllLiveData();
     }
 
