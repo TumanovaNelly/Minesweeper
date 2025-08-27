@@ -2,13 +2,15 @@ package com.example.minesweeper.core.model;
 
 import com.example.minesweeper.core.repository.IField;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
+
 /**
  * The main engine for the Minesweeper game.
  * <p>
- * This class encapsulates all the game logic, state management, and rules.
- * It acts as a facade for the UI layer, providing a simple API to interact
- * with the game (e.g., starting a new game, revealing a cell).
- * The UI should only communicate with this class to drive the game forward.
+ * This class encapsulates all game logic, state management, and rules. It acts as a facade
+ * for the UI layer, providing a simple API to interact with the game. The engine implements
+ * advanced logic, including a safe first move and a solver-assisted reveal mechanism.
  */
 public class GameEngine {
     private IField field;
@@ -18,6 +20,12 @@ public class GameEngine {
     private boolean isFirstMove;
 
     /**
+     * A private record to hold the counts of neighboring cells by their state.
+     * Used by the internal solver logic.
+     */
+    private record StateAmounts(int hidden, int flagged) {}
+
+    /**
      * Default constructor. Initializes the game in a non-started state.
      */
     public GameEngine() {
@@ -25,8 +33,8 @@ public class GameEngine {
     }
 
     /**
-     * Prepares a new game session by storing settings and resetting the state.
-     * The actual game field is not created until the first move is made.
+     * Prepares a new game session by storing settings and creating an initial, empty field.
+     * The actual game field with mines is not generated until the first move is made.
      *
      * @param settings The configuration for the new game.
      */
@@ -39,70 +47,168 @@ public class GameEngine {
     }
 
     /**
-     * Processes a player's move to reveal a cell.
-     * If it's the first move, it generates a new field with a safe zone
-     * around the specified coordinate before proceeding.
+     * Processes a player's click on a cell, triggering the main game logic loop.
+     * <p>
+     * If it's the first move, this action generates the actual game field with a safe zone.
+     * For subsequent moves, it initiates a solver-like process that reveals cells and
+     * deduces further moves based on the state of the board.
      *
-     * @param row The row-coordinate of the cell to reveal.
-     * @param col The column-coordinate of the cell to reveal.
+     * @param row The row-coordinate of the cell.
+     * @param col The column-coordinate of the cell.
      */
-    public void revealCell(int row, int col) {
-        // On the first move, generate the field with a safe starting area.
-        if (isFirstMove) {
-            if (settings == null) {
-                throw new IllegalStateException("Game has not been started. Call startNewGame() first.");
-            }
-            Coordinate safeCoordinate = new Coordinate(row, col);
-            this.field = new Field(settings, safeCoordinate);
-            this.isFirstMove = false;
-        }
-
-        if (gameState != GameState.IN_PROGRESS) {
-            return; // Game is over, no more moves allowed.
-        }
-
-        Cell cell = field.getCell(new Coordinate(row, col));
-
-        if (cell.isRevealed() || cell.isFlagged()) {
-            return; // Cannot reveal an already revealed or flagged cell.
-        }
-
-        cell.setState(CellState.REVEALED);
-
-        if (cell.hasMine()) {
-            // This block will never be reached on the first move due to the safe start.
-            this.gameState = GameState.LOST;
+    public void handleCellClick(int row, int col) {
+        if (gameState != GameState.IN_PROGRESS)
             return;
+
+        Coordinate coordinate = new Coordinate(row, col);
+
+        if (isFirstMove) {
+            field = new Field(settings, coordinate);
+            isFirstMove = false;
         }
 
-        revealedCellsCount++;
-
-        if (cell.getAdjacentMinesCount() == 0) {
-            revealNeighbors(new Coordinate(row, col));
+        Cell cell = field.getCell(coordinate);
+        if (cell.isRevealed()) {
+            cell.setState(CellState.HIDDEN);
+            --revealedCellsCount;
         }
 
+        attemptChordReveal(coordinate);
         checkWinCondition();
     }
 
     /**
-     * Recursively reveals all neighboring cells of a given empty cell.
+     * Initiates and manages the non-recursive, queue-based reveal process.
+     * <p>
+     * This method simulates an intelligent player. It starts by revealing the initial cell,
+     * then iteratively analyzes the board, flagging obvious mines and revealing obvious
+     * safe cells until no more logical moves can be deduced.
      *
-     * @param coordinate The coordinate of the initial empty cell.
+     * @param coordinate The starting coordinate for the reveal process.
      */
-    private void revealNeighbors(Coordinate coordinate) {
-        // ...
+    private void attemptChordReveal(Coordinate coordinate) {
+        Queue<Coordinate> queue = new ArrayDeque<>();
+        revealHiddenCell(coordinate, queue);
+
+        while (!queue.isEmpty()) {
+            Coordinate newCoordinate = queue.remove();
+            Cell cell = field.getCell(newCoordinate);
+
+            StateAmounts neighbourStates = countNeighborStates(newCoordinate);
+
+            if (cell.getAdjacentMinesCount() == neighbourStates.flagged)
+                revealHiddenNeighbours(newCoordinate, queue);
+            else if (cell.getAdjacentMinesCount() == neighbourStates.flagged + neighbourStates.hidden)
+                flaggedAllHiddenNeighbours(newCoordinate);
+        }
+    }
+
+    /**
+     * Reveals a single hidden cell and adds it to the processing queue.
+     * This is the primary action for opening a cell.
+     *
+     * @param coordinate The coordinate of the cell to reveal.
+     * @param queue      The queue to which the coordinate will be added for further processing.
+     */
+    private void revealHiddenCell(Coordinate coordinate, Queue<Coordinate> queue) {
+        Cell cell = field.getCell(coordinate);
+
+        if (!cell.isHidden())
+            return;
+
+        cell.setState(CellState.REVEALED);
+        ++revealedCellsCount;
+
+        if (cell.hasMine())
+            this.gameState = GameState.LOST;
+
+        queue.add(coordinate);
+    }
+
+
+    /**
+     * Automatically flags all hidden neighbors of a given cell.
+     * This is a solver action based on logical deduction.
+     *
+     * @param coordinate The coordinate of the cell whose neighbors will be flagged.
+     */
+    private void flaggedAllHiddenNeighbours(Coordinate coordinate) {
+        for (int dRow = -1; dRow <= 1; dRow++) {
+            for (int dCol = -1; dCol <= 1; dCol++) {
+                if (dRow == 0 && dCol == 0)
+                    continue;
+
+                Coordinate neighbourCoordinate =
+                        new Coordinate(coordinate.row() + dRow, coordinate.col() + dCol);
+
+                if (!field.isValidCoordinate(neighbourCoordinate))
+                    continue;
+
+                Cell cell = field.getCell(neighbourCoordinate);
+
+                if (cell.isHidden()) {
+                    cell.setState(CellState.FLAGGED);
+                }
+            }
+        }
+    }
+
+    /**
+     * Reveals all hidden, non-flagged neighbors of a given cell.
+     * This is a solver action ("chord") based on logical deduction.
+     *
+     * @param coordinate The coordinate of the cell whose neighbors will be revealed.
+     * @param queue      The processing queue to add newly revealed cells to.
+     */
+    private void revealHiddenNeighbours(Coordinate coordinate, Queue<Coordinate> queue) {
+        for (int dRow = -1; dRow <= 1; dRow++) {
+            for (int dCol = -1; dCol <= 1; dCol++) {
+                if (dRow == 0 && dCol == 0)
+                    continue;
+
+                Coordinate neighbourCoordinate =
+                        new Coordinate(coordinate.row() + dRow, coordinate.col() + dCol);
+
+                if (!field.isValidCoordinate(neighbourCoordinate))
+                    continue;
+
+                revealHiddenCell(neighbourCoordinate, queue);
+            }
+        }
+    }
+
+    /**
+     * Counts the number of hidden and flagged neighbors around a given coordinate.
+     *
+     * @param coordinate The center coordinate.
+     * @return A {@link StateAmounts} record containing the counts.
+     */
+    private StateAmounts countNeighborStates(Coordinate coordinate) {
+        int hiddenAmount = 0;
+        int flaggedAmount = 0;
+        for (int dRow = -1; dRow <= 1; dRow++) {
+            for (int dCol = -1; dCol <= 1; dCol++) {
+                if (dRow == 0 && dCol == 0)
+                    continue;
+
+                Coordinate neighbourCoordinate =
+                        new Coordinate(coordinate.row() + dRow, coordinate.col() + dCol);
+
+                if (!field.isValidCoordinate(neighbourCoordinate))
+                    continue;
+
+                switch (field.getCell(neighbourCoordinate).getState()) {
+                    case HIDDEN -> ++hiddenAmount;
+                    case FLAGGED -> ++flaggedAmount;
+                }
+            }
+        }
+        return new StateAmounts(hiddenAmount, flaggedAmount);
     }
 
 
     /**
      * Toggles a flag on a cell at the specified coordinates.
-     * <p>
-     * This method cycles through the following states:
-     * <ul>
-     *     <li>{@code HIDDEN} -> {@code FLAGGED}</li>
-     *     <li>{@code FLAGGED} -> {@code HIDDEN}</li>
-     * </ul>
-     * No action is taken if the cell is already revealed.
      *
      * @param row The row-coordinate of the cell.
      * @param col The column-coordinate of the cell.

@@ -66,7 +66,7 @@ public class GameViewModel extends ViewModel {
      */
     public void onNewGameRequested() {
         // TODO: In the future, these settings will come from a settings repository/screen.
-        FieldSettings settings = new FieldSettings(10, 10, 15);
+        FieldSettings settings = FieldSettings.fromPercentage(10, 10, 60);
         gameEngine.startNewGame(settings);
 
         // Push the initial state to the UI.
@@ -85,7 +85,7 @@ public class GameViewModel extends ViewModel {
     public void onCellClicked(int row, int col) {
         if (gameEngine.getGameState() != GameState.IN_PROGRESS) return;
 
-        gameEngine.revealCell(row, col);
+        gameEngine.handleCellClick(row, col);
         updateAllLiveData();
     }
 

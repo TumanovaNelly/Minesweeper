@@ -109,4 +109,12 @@ public final class Cell {
         return state == CellState.FLAGGED;
     }
 
+    /**
+     * A convenience method to check if the cell is currently hidden.
+     * @return true if the cell's state is {@link CellState#HIDDEN}.
+     */
+    public boolean isHidden() {
+        return state == CellState.HIDDEN;
+    }
+
 }
